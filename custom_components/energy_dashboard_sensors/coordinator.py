@@ -116,17 +116,37 @@ class EnergyDashboardCoordinator(
         )
 
     def _find_co2_signal_entity(self) -> str | None:
-        """Return the co2signal percentage entity id, mirroring the frontend."""
+        """Return the co2signal percentage entity id, mirroring the frontend.
+
+        The co2signal (Electricity Maps) integration exposes two entities; the
+        one with unit "%" is the grid fossil fuel percentage used to derive the
+        low-carbon share. The unit is read from the entity registry first and
+        falls back to the live state, so detection also works while the entity
+        is temporarily unavailable.
+        """
         registry = er.async_get(self.hass)
+        candidates: list[str] = []
         for entry in registry.entities.values():
             if entry.platform != CO2_SIGNAL_PLATFORM:
                 continue
-            state = self.hass.states.get(entry.entity_id)
-            if state is None:
-                continue
-            if state.attributes.get("unit_of_measurement") != "%":
-                continue
-            return entry.entity_id
+            candidates.append(entry.entity_id)
+            unit = entry.unit_of_measurement
+            if unit is None:
+                state = self.hass.states.get(entry.entity_id)
+                unit = (
+                    state.attributes.get("unit_of_measurement") if state else None
+                )
+            if unit == "%":
+                return entry.entity_id
+
+        if candidates:
+            _LOGGER.debug(
+                "co2signal entities found but none with unit '%%': %s", candidates
+            )
+        else:
+            _LOGGER.debug(
+                "No co2signal entity found; low-carbon sensors stay unavailable"
+            )
         return None
 
     async def _async_update_data(self) -> dict[str, dict[str, float | None]]:

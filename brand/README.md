@@ -1,20 +1,30 @@
 # Brand assets
 
-- `icon.svg` — source vector icon.
-- `icon.png` — 256×256 (Home Assistant brands requirement).
-- `icon@2x.png` — 512×512.
+Source vectors for the integration's brand images:
 
-Home Assistant only shows the logo on the integrations page once the assets are
-merged into the [home-assistant/brands](https://github.com/home-assistant/brands)
-repository. To submit, add these files under
-`custom_integrations/energy_dashboard_sensors/` in that repo (the folder name
-must match the integration `domain`). The same `icon.png` can be reused as
-`logo.png` if no separate wordmark is provided.
+- `icon.svg` — square app icon.
+- `logo.svg` — landscape logo (icon + wordmark).
 
-Re-render the PNGs after editing the SVG:
+Since Home Assistant 2026.3, custom integrations ship brand images locally from a
+`brand/` folder **inside the integration**. The rendered PNGs therefore live in
+`custom_components/energy_dashboard_sensors/brand/`:
+
+- `icon.png` (256×256), `icon@2x.png` (512×512)
+- `logo.png`, `logo@2x.png`
+
+Local brand images take priority over the brands CDN; no submission to the
+home-assistant/brands repository is required. HA loads them at startup, so
+restart Home Assistant after adding or changing them.
+
+Re-render after editing the SVGs:
 
 ```bash
-python3 -c "import cairosvg; \
-  cairosvg.svg2png(url='icon.svg', write_to='icon.png', output_width=256, output_height=256); \
-  cairosvg.svg2png(url='icon.svg', write_to='icon@2x.png', output_width=512, output_height=512)"
+python3 - <<'PY'
+import cairosvg
+T = "../custom_components/energy_dashboard_sensors/brand/"
+cairosvg.svg2png(url="icon.svg", write_to=T+"icon.png", output_width=256, output_height=256)
+cairosvg.svg2png(url="icon.svg", write_to=T+"icon@2x.png", output_width=512, output_height=512)
+cairosvg.svg2png(url="logo.svg", write_to=T+"logo.png", output_width=450, output_height=140)
+cairosvg.svg2png(url="logo.svg", write_to=T+"logo@2x.png", output_width=900, output_height=280)
+PY
 ```
