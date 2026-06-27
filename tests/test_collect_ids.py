@@ -31,6 +31,33 @@ def test_grid_source_without_flows_does_not_raise():
     assert ids.to_grid == ["sensor.feed_in"]
 
 
+def test_new_flat_grid_format_is_parsed():
+    """HA 2025+ stores grid import/export directly on the source."""
+    prefs = {
+        "energy_sources": [
+            {
+                "type": "grid",
+                "stat_energy_from": "sensor.stromzaehler",
+                "stat_energy_to": "sensor.stromzaehler_einspeisung",
+            },
+            {"type": "solar", "stat_energy_from": "sensor.dtu"},
+            {"type": "solar", "stat_energy_from": "sensor.solakon"},
+            {
+                "type": "battery",
+                "stat_energy_to": "sensor.bat_charge",
+                "stat_energy_from": "sensor.bat_discharge",
+            },
+        ],
+        "device_consumption": [],
+    }
+    ids = _collect_statistic_ids(prefs)
+    assert ids.from_grid == ["sensor.stromzaehler"]
+    assert ids.to_grid == ["sensor.stromzaehler_einspeisung"]
+    assert ids.solar == ["sensor.dtu", "sensor.solakon"]
+    assert ids.to_battery == ["sensor.bat_charge"]
+    assert ids.from_battery == ["sensor.bat_discharge"]
+
+
 def test_full_source_set_is_parsed():
     """All source types contribute their statistic ids."""
     prefs = {

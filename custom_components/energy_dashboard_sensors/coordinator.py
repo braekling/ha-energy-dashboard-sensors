@@ -79,6 +79,11 @@ def _collect_statistic_ids(prefs: EnergyPreferences) -> StatisticIds:
             _append_if_present(ids.to_battery, source.get("stat_energy_to"))
             _append_if_present(ids.from_battery, source.get("stat_energy_from"))
         elif source_type == "grid":
+            # New unified grid format (HA 2025+) stores the import/export
+            # meters directly on the source, like batteries.
+            _append_if_present(ids.from_grid, source.get("stat_energy_from"))
+            _append_if_present(ids.to_grid, source.get("stat_energy_to"))
+            # Legacy grid format stores them in flow_from / flow_to lists.
             for flow in source.get("flow_from") or []:
                 _append_if_present(ids.from_grid, flow.get("stat_energy_from"))
             for flow in source.get("flow_to") or []:
@@ -173,7 +178,7 @@ class EnergyDashboardCoordinator(
                 )
 
             result[period.key] = self._compute_metrics(
-                ids, energy_stats, co2_entity, co2_stats
+                ids, energy_stats, co2_entity, co2_stats, period.key, start, now
             )
 
         return result
@@ -184,6 +189,9 @@ class EnergyDashboardCoordinator(
         energy_stats: dict,
         co2_entity: str | None,
         co2_stats: dict,
+        period_key: str,
+        start: datetime,
+        now: datetime,
     ) -> dict[str, float | None]:
         """Build per-period flows and derive the dashboard metrics."""
         change_by_id: dict[str, dict[float, float]] = {}
@@ -234,6 +242,31 @@ class EnergyDashboardCoordinator(
                 co2_mean_by_ts.get(ts, 100.0) for ts in ordered_timestamps
             ]
             fossil_grid_energy = fossil_energy(grid_from_series, co2_percent_series)
+
+        if _LOGGER.isEnabledFor(logging.DEBUG):
+            _LOGGER.debug(
+                "[%s] range=%s..%s buckets=%d resolution-sums kWh: "
+                "from_grid=%.3f to_grid=%.3f solar=%.3f "
+                "to_battery=%.3f from_battery=%.3f used_total=%.3f | "
+                "ids from_grid=%s to_grid=%s solar=%s to_battery=%s "
+                "from_battery=%s | fossil=%s",
+                period_key,
+                start.isoformat(),
+                now.isoformat(),
+                len(ordered_timestamps),
+                summary.total_from_grid,
+                summary.total_to_grid,
+                summary.total_solar,
+                summary.total_to_battery,
+                summary.total_from_battery,
+                summary.total_used,
+                ids.from_grid,
+                ids.to_grid,
+                ids.solar,
+                ids.to_battery,
+                ids.from_battery,
+                fossil_grid_energy,
+            )
 
         return {
             METRIC_TOTAL_CONSUMPTION: total_home_consumption(summary),
