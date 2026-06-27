@@ -1,0 +1,12 @@
+{
+  "domain": "energy_dashboard_sensors",
+  "name": "Energy Dashboard Sensors",
+  "codeowners": ["@braekling"],
+  "config_flow": true,
+  "dependencies": ["energy", "recorder"],
+  "documentation": "https://github.com/braekling/ha-energy-dashboard-sensors",
+  "iot_class": "calculated",
+  "issue_tracker": "https://github.com/braekling/ha-energy-dashboard-sensors/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}

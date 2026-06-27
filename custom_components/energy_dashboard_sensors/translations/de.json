@@ -1,0 +1,34 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Energy Dashboard Sensoren",
+        "description": "Erstellt Sensoren für die Tageswerte deines Home Assistant Energy Dashboards. Die Quell-Entitäten werden automatisch aus deiner Energiekonfiguration übernommen."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Bereits eingerichtet. Es ist nur eine Instanz erlaubt.",
+      "energy_not_configured": "Das Energy Dashboard ist noch nicht konfiguriert. Richte es zuerst unter Einstellungen > Dashboards > Energie ein."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Optionen",
+        "data": {
+          "scan_interval_minutes": "Aktualisierungsintervall (Minuten)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "total_consumption": { "name": "Gesamtverbrauch" },
+      "solar_production": { "name": "PV-Erzeugung" },
+      "net_from_grid": { "name": "Netto vom Netz" },
+      "solar_self_consumption": { "name": "PV-Eigenverbrauch" },
+      "self_sufficiency": { "name": "Autarkiegrad" },
+      "low_carbon_consumption": { "name": "Verbrauch CO2-neutraler Strom" }
+    }
+  }
+}
