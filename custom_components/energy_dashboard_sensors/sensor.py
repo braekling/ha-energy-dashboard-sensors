@@ -8,7 +8,6 @@ from datetime import datetime
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
-    SensorEntityDescription,
     SensorStateClass,
 )
 from homeassistant.config_entries import ConfigEntry
@@ -29,71 +28,63 @@ from .const import (
     METRIC_TOTAL_CONSUMPTION,
 )
 from .coordinator import EnergyDashboardCoordinator
+from .periods import PERIODS, period_start
 
 
 @dataclass(frozen=True, kw_only=True)
-class EnergyDashboardSensorDescription(SensorEntityDescription):
-    """Describes an energy dashboard sensor and whether it resets daily."""
+class MetricDefinition:
+    """Static description of a metric, independent of the time period."""
 
-    # When True the value is reported with state_class TOTAL and a last_reset
-    # at the start of the local day (used for values that can decrease, like
-    # the net grid balance). When False a daily-resetting total_increasing
-    # value is assumed.
-    resets_daily: bool = False
+    key: str
+    icon: str
+    device_class: SensorDeviceClass | None = None
+    native_unit_of_measurement: str | None = None
+    suggested_display_precision: int = 0
+    # Energy balances can decrease (net export), so they are reported as a
+    # resetting TOTAL with last_reset instead of TOTAL_INCREASING.
+    is_balance: bool = False
 
 
-SENSOR_DESCRIPTIONS: tuple[EnergyDashboardSensorDescription, ...] = (
-    EnergyDashboardSensorDescription(
+METRIC_DEFINITIONS: tuple[MetricDefinition, ...] = (
+    MetricDefinition(
         key=METRIC_TOTAL_CONSUMPTION,
-        translation_key=METRIC_TOTAL_CONSUMPTION,
-        device_class=SensorDeviceClass.ENERGY,
-        state_class=SensorStateClass.TOTAL_INCREASING,
-        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
-        suggested_display_precision=2,
         icon="mdi:home-lightning-bolt",
+        device_class=SensorDeviceClass.ENERGY,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        suggested_display_precision=2,
     ),
-    EnergyDashboardSensorDescription(
+    MetricDefinition(
         key=METRIC_SOLAR_PRODUCTION,
-        translation_key=METRIC_SOLAR_PRODUCTION,
-        device_class=SensorDeviceClass.ENERGY,
-        state_class=SensorStateClass.TOTAL_INCREASING,
-        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
-        suggested_display_precision=2,
         icon="mdi:solar-power",
-    ),
-    EnergyDashboardSensorDescription(
-        key=METRIC_NET_FROM_GRID,
-        translation_key=METRIC_NET_FROM_GRID,
         device_class=SensorDeviceClass.ENERGY,
-        state_class=SensorStateClass.TOTAL,
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         suggested_display_precision=2,
+    ),
+    MetricDefinition(
+        key=METRIC_NET_FROM_GRID,
         icon="mdi:transmission-tower",
-        resets_daily=True,
+        device_class=SensorDeviceClass.ENERGY,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        suggested_display_precision=2,
+        is_balance=True,
     ),
-    EnergyDashboardSensorDescription(
+    MetricDefinition(
         key=METRIC_SOLAR_SELF_CONSUMPTION,
-        translation_key=METRIC_SOLAR_SELF_CONSUMPTION,
-        state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=PERCENTAGE,
-        suggested_display_precision=0,
         icon="mdi:solar-power-variant",
+        native_unit_of_measurement=PERCENTAGE,
+        suggested_display_precision=0,
     ),
-    EnergyDashboardSensorDescription(
+    MetricDefinition(
         key=METRIC_SELF_SUFFICIENCY,
-        translation_key=METRIC_SELF_SUFFICIENCY,
-        state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=PERCENTAGE,
-        suggested_display_precision=0,
         icon="mdi:home-battery",
-    ),
-    EnergyDashboardSensorDescription(
-        key=METRIC_LOW_CARBON_CONSUMPTION,
-        translation_key=METRIC_LOW_CARBON_CONSUMPTION,
-        state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=PERCENTAGE,
         suggested_display_precision=0,
+    ),
+    MetricDefinition(
+        key=METRIC_LOW_CARBON_CONSUMPTION,
         icon="mdi:leaf",
+        native_unit_of_measurement=PERCENTAGE,
+        suggested_display_precision=0,
     ),
 )
 
@@ -106,29 +97,47 @@ async def async_setup_entry(
     """Set up the energy dashboard sensors from a config entry."""
     coordinator: EnergyDashboardCoordinator = hass.data[DOMAIN][entry.entry_id]
     async_add_entities(
-        EnergyDashboardSensor(coordinator, entry, description)
-        for description in SENSOR_DESCRIPTIONS
+        EnergyDashboardSensor(coordinator, entry, metric, period.key)
+        for metric in METRIC_DEFINITIONS
+        for period in PERIODS
     )
 
 
 class EnergyDashboardSensor(
     CoordinatorEntity[EnergyDashboardCoordinator], SensorEntity
 ):
-    """A single value derived from the Home Assistant Energy Dashboard."""
+    """A single energy dashboard metric for a given time period."""
 
     _attr_has_entity_name = True
-    entity_description: EnergyDashboardSensorDescription
 
     def __init__(
         self,
         coordinator: EnergyDashboardCoordinator,
         entry: ConfigEntry,
-        description: EnergyDashboardSensorDescription,
+        metric: MetricDefinition,
+        period_key: str,
     ) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator)
-        self.entity_description = description
-        self._attr_unique_id = f"{entry.entry_id}_{description.key}"
+        self._metric = metric
+        self._period_key = period_key
+
+        self._attr_unique_id = f"{entry.entry_id}_{metric.key}_{period_key}"
+        self._attr_translation_key = f"{metric.key}_{period_key}"
+        self._attr_icon = metric.icon
+        self._attr_device_class = metric.device_class
+        self._attr_native_unit_of_measurement = metric.native_unit_of_measurement
+        self._attr_suggested_display_precision = metric.suggested_display_precision
+
+        if metric.device_class == SensorDeviceClass.ENERGY:
+            self._attr_state_class = (
+                SensorStateClass.TOTAL
+                if metric.is_balance
+                else SensorStateClass.TOTAL_INCREASING
+            )
+        else:
+            self._attr_state_class = SensorStateClass.MEASUREMENT
+
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, entry.entry_id)},
             name="Energy Dashboard",
@@ -137,14 +146,15 @@ class EnergyDashboardSensor(
 
     @property
     def native_value(self) -> float | None:
-        """Return the current value of the metric."""
+        """Return the current value of the metric for this period."""
         if self.coordinator.data is None:
             return None
-        return self.coordinator.data.get(self.entity_description.key)
+        period_data = self.coordinator.data.get(self._period_key, {})
+        return period_data.get(self._metric.key)
 
     @property
     def last_reset(self) -> datetime | None:
-        """Return the start of the local day for daily-resetting totals."""
-        if self.entity_description.resets_daily:
-            return dt_util.start_of_local_day()
+        """Return the start of the period for resetting balance totals."""
+        if self._metric.is_balance:
+            return period_start(self._period_key, dt_util.now())
         return None

@@ -23,6 +23,7 @@ from .const import (
     METRIC_SOLAR_SELF_CONSUMPTION,
     METRIC_TOTAL_CONSUMPTION,
 )
+from .periods import PERIODS, period_start
 from .energy_math import (
     PeriodFlows,
     fossil_energy,
@@ -63,25 +64,42 @@ class StatisticIds:
 
 
 def _collect_statistic_ids(prefs: EnergyPreferences) -> StatisticIds:
-    """Extract grid/solar/battery statistic ids from energy preferences."""
+    """Extract grid/solar/battery statistic ids from energy preferences.
+
+    The preferences are user-editable storage and individual keys may be
+    missing (e.g. a grid source with only a feed-in or only a consumption
+    meter), so every access is defensive and empty ids are skipped.
+    """
     ids = StatisticIds()
     for source in prefs["energy_sources"]:
-        source_type = source["type"]
+        source_type = source.get("type")
         if source_type == "solar":
-            ids.solar.append(source["stat_energy_from"])
+            _append_if_present(ids.solar, source.get("stat_energy_from"))
         elif source_type == "battery":
-            ids.to_battery.append(source["stat_energy_to"])
-            ids.from_battery.append(source["stat_energy_from"])
+            _append_if_present(ids.to_battery, source.get("stat_energy_to"))
+            _append_if_present(ids.from_battery, source.get("stat_energy_from"))
         elif source_type == "grid":
-            for flow in source["flow_from"]:
-                ids.from_grid.append(flow["stat_energy_from"])
-            for flow in source["flow_to"]:
-                ids.to_grid.append(flow["stat_energy_to"])
+            for flow in source.get("flow_from") or []:
+                _append_if_present(ids.from_grid, flow.get("stat_energy_from"))
+            for flow in source.get("flow_to") or []:
+                _append_if_present(ids.to_grid, flow.get("stat_energy_to"))
     return ids
 
 
-class EnergyDashboardCoordinator(DataUpdateCoordinator[dict[str, float | None]]):
-    """Coordinator that recomputes the energy dashboard daily metrics."""
+def _append_if_present(target: list[str], stat_id: str | None) -> None:
+    """Append a statistic id to the target list when it is set."""
+    if stat_id:
+        target.append(stat_id)
+
+
+class EnergyDashboardCoordinator(
+    DataUpdateCoordinator[dict[str, dict[str, float | None]]]
+):
+    """Coordinator that recomputes the energy dashboard metrics per period.
+
+    ``data`` is keyed by period (daily/weekly/monthly/yearly), each holding a
+    mapping of metric key to value.
+    """
 
     def __init__(self, hass: HomeAssistant, update_interval: timedelta) -> None:
         """Initialize the coordinator."""
@@ -106,8 +124,8 @@ class EnergyDashboardCoordinator(DataUpdateCoordinator[dict[str, float | None]])
             return entry.entity_id
         return None
 
-    async def _async_update_data(self) -> dict[str, float | None]:
-        """Fetch statistics for the current day and compute the metrics."""
+    async def _async_update_data(self) -> dict[str, dict[str, float | None]]:
+        """Fetch statistics for each period and compute the metrics."""
         manager = await async_get_manager(self.hass)
         prefs = manager.data
         if not prefs or not prefs["energy_sources"]:
@@ -122,37 +140,43 @@ class EnergyDashboardCoordinator(DataUpdateCoordinator[dict[str, float | None]])
                 "No grid or solar sources found in the energy preferences."
             )
 
-        start = dt_util.start_of_local_day()
-        end = dt_util.now()
-
         co2_entity = self._find_co2_signal_entity()
         recorder = get_instance(self.hass)
+        now = dt_util.now()
 
-        energy_stats = await recorder.async_add_executor_job(
-            statistics_during_period,
-            self.hass,
-            start,
-            end,
-            ids.all_ids,
-            "hour",
-            {"energy": UnitOfEnergy.KILO_WATT_HOUR},
-            {"change"},
-        )
+        result: dict[str, dict[str, float | None]] = {}
+        for period in PERIODS:
+            start = period_start(period.key, now)
 
-        co2_stats: dict = {}
-        if co2_entity:
-            co2_stats = await recorder.async_add_executor_job(
+            energy_stats = await recorder.async_add_executor_job(
                 statistics_during_period,
                 self.hass,
                 start,
-                end,
-                {co2_entity},
-                "hour",
-                None,
-                {"mean"},
+                now,
+                ids.all_ids,
+                period.resolution,
+                {"energy": UnitOfEnergy.KILO_WATT_HOUR},
+                {"change"},
             )
 
-        return self._compute_metrics(ids, energy_stats, co2_entity, co2_stats)
+            co2_stats: dict = {}
+            if co2_entity:
+                co2_stats = await recorder.async_add_executor_job(
+                    statistics_during_period,
+                    self.hass,
+                    start,
+                    now,
+                    {co2_entity},
+                    period.resolution,
+                    None,
+                    {"mean"},
+                )
+
+            result[period.key] = self._compute_metrics(
+                ids, energy_stats, co2_entity, co2_stats
+            )
+
+        return result
 
     def _compute_metrics(
         self,

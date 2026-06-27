@@ -11,17 +11,22 @@ the backend and publishes them as sensors.
 
 ## Sensors
 
-All values are for the **current day** and reset at local midnight, matching the
-default Energy Dashboard view.
+Six metrics are provided, each for four periods — **today, this week, this
+month and this year** — for a total of 24 sensors. Every value resets at the
+start of its period, matching the corresponding Energy Dashboard view.
 
-| Sensor | Unit | Meaning |
+| Metric | Unit | Meaning |
 | --- | --- | --- |
-| Total consumption | kWh | Total energy consumed by the home today |
-| Solar production | kWh | PV energy produced today |
+| Total consumption | kWh | Total energy consumed by the home |
+| Solar production | kWh | PV energy produced |
 | Net from grid | kWh | Grid import minus export (negative = net export) |
 | Solar self-consumption | % | Share of PV production used in the home (battery-aware) |
 | Self-sufficiency | % | Share of home consumption covered without the grid (Autarkiegrad) |
 | Low-carbon consumption | % | Share of consumed energy that is CO₂-neutral |
+
+Statistics resolution per period follows the dashboard's own logic (hourly for
+today, daily for week/month, monthly for the year), so each sensor stays
+consistent with the matching dashboard range.
 
 The source entities (grid, solar, battery, CO₂ signal) are picked up
 **automatically** from your existing Energy Dashboard configuration. There is

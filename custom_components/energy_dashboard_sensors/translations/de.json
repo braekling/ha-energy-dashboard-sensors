@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Energy Dashboard Sensoren",
-        "description": "Erstellt Sensoren für die Tageswerte deines Home Assistant Energy Dashboards. Die Quell-Entitäten werden automatisch aus deiner Energiekonfiguration übernommen."
+        "description": "Erstellt Sensoren für die Werte deines Home Assistant Energy Dashboards für heute, diese Woche, diesen Monat und dieses Jahr. Die Quell-Entitäten werden automatisch aus deiner Energiekonfiguration übernommen."
       }
     },
     "abort": {
@@ -23,12 +23,78 @@
   },
   "entity": {
     "sensor": {
-      "total_consumption": { "name": "Gesamtverbrauch" },
-      "solar_production": { "name": "PV-Erzeugung" },
-      "net_from_grid": { "name": "Netto vom Netz" },
-      "solar_self_consumption": { "name": "PV-Eigenverbrauch" },
-      "self_sufficiency": { "name": "Autarkiegrad" },
-      "low_carbon_consumption": { "name": "Verbrauch CO2-neutraler Strom" }
+      "total_consumption_daily": {
+        "name": "Gesamtverbrauch (heute)"
+      },
+      "total_consumption_weekly": {
+        "name": "Gesamtverbrauch (diese Woche)"
+      },
+      "total_consumption_monthly": {
+        "name": "Gesamtverbrauch (dieser Monat)"
+      },
+      "total_consumption_yearly": {
+        "name": "Gesamtverbrauch (dieses Jahr)"
+      },
+      "solar_production_daily": {
+        "name": "PV-Erzeugung (heute)"
+      },
+      "solar_production_weekly": {
+        "name": "PV-Erzeugung (diese Woche)"
+      },
+      "solar_production_monthly": {
+        "name": "PV-Erzeugung (dieser Monat)"
+      },
+      "solar_production_yearly": {
+        "name": "PV-Erzeugung (dieses Jahr)"
+      },
+      "net_from_grid_daily": {
+        "name": "Netto vom Netz (heute)"
+      },
+      "net_from_grid_weekly": {
+        "name": "Netto vom Netz (diese Woche)"
+      },
+      "net_from_grid_monthly": {
+        "name": "Netto vom Netz (dieser Monat)"
+      },
+      "net_from_grid_yearly": {
+        "name": "Netto vom Netz (dieses Jahr)"
+      },
+      "solar_self_consumption_daily": {
+        "name": "PV-Eigenverbrauch (heute)"
+      },
+      "solar_self_consumption_weekly": {
+        "name": "PV-Eigenverbrauch (diese Woche)"
+      },
+      "solar_self_consumption_monthly": {
+        "name": "PV-Eigenverbrauch (dieser Monat)"
+      },
+      "solar_self_consumption_yearly": {
+        "name": "PV-Eigenverbrauch (dieses Jahr)"
+      },
+      "self_sufficiency_daily": {
+        "name": "Autarkiegrad (heute)"
+      },
+      "self_sufficiency_weekly": {
+        "name": "Autarkiegrad (diese Woche)"
+      },
+      "self_sufficiency_monthly": {
+        "name": "Autarkiegrad (dieser Monat)"
+      },
+      "self_sufficiency_yearly": {
+        "name": "Autarkiegrad (dieses Jahr)"
+      },
+      "low_carbon_consumption_daily": {
+        "name": "Verbrauch CO2-neutraler Strom (heute)"
+      },
+      "low_carbon_consumption_weekly": {
+        "name": "Verbrauch CO2-neutraler Strom (diese Woche)"
+      },
+      "low_carbon_consumption_monthly": {
+        "name": "Verbrauch CO2-neutraler Strom (dieser Monat)"
+      },
+      "low_carbon_consumption_yearly": {
+        "name": "Verbrauch CO2-neutraler Strom (dieses Jahr)"
+      }
     }
   }
 }

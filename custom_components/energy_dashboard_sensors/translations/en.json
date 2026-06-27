@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Energy Dashboard Sensors",
-        "description": "Create sensors for the daily values of your Home Assistant Energy Dashboard. The source entities are taken automatically from your energy configuration."
+        "description": "Create sensors for the values of your Home Assistant Energy Dashboard for today, this week, this month and this year. The source entities are taken automatically from your energy configuration."
       }
     },
     "abort": {
@@ -23,12 +23,78 @@
   },
   "entity": {
     "sensor": {
-      "total_consumption": { "name": "Total consumption" },
-      "solar_production": { "name": "Solar production" },
-      "net_from_grid": { "name": "Net from grid" },
-      "solar_self_consumption": { "name": "Solar self-consumption" },
-      "self_sufficiency": { "name": "Self-sufficiency" },
-      "low_carbon_consumption": { "name": "Low-carbon consumption" }
+      "total_consumption_daily": {
+        "name": "Total consumption (today)"
+      },
+      "total_consumption_weekly": {
+        "name": "Total consumption (this week)"
+      },
+      "total_consumption_monthly": {
+        "name": "Total consumption (this month)"
+      },
+      "total_consumption_yearly": {
+        "name": "Total consumption (this year)"
+      },
+      "solar_production_daily": {
+        "name": "Solar production (today)"
+      },
+      "solar_production_weekly": {
+        "name": "Solar production (this week)"
+      },
+      "solar_production_monthly": {
+        "name": "Solar production (this month)"
+      },
+      "solar_production_yearly": {
+        "name": "Solar production (this year)"
+      },
+      "net_from_grid_daily": {
+        "name": "Net from grid (today)"
+      },
+      "net_from_grid_weekly": {
+        "name": "Net from grid (this week)"
+      },
+      "net_from_grid_monthly": {
+        "name": "Net from grid (this month)"
+      },
+      "net_from_grid_yearly": {
+        "name": "Net from grid (this year)"
+      },
+      "solar_self_consumption_daily": {
+        "name": "Solar self-consumption (today)"
+      },
+      "solar_self_consumption_weekly": {
+        "name": "Solar self-consumption (this week)"
+      },
+      "solar_self_consumption_monthly": {
+        "name": "Solar self-consumption (this month)"
+      },
+      "solar_self_consumption_yearly": {
+        "name": "Solar self-consumption (this year)"
+      },
+      "self_sufficiency_daily": {
+        "name": "Self-sufficiency (today)"
+      },
+      "self_sufficiency_weekly": {
+        "name": "Self-sufficiency (this week)"
+      },
+      "self_sufficiency_monthly": {
+        "name": "Self-sufficiency (this month)"
+      },
+      "self_sufficiency_yearly": {
+        "name": "Self-sufficiency (this year)"
+      },
+      "low_carbon_consumption_daily": {
+        "name": "Low-carbon consumption (today)"
+      },
+      "low_carbon_consumption_weekly": {
+        "name": "Low-carbon consumption (this week)"
+      },
+      "low_carbon_consumption_monthly": {
+        "name": "Low-carbon consumption (this month)"
+      },
+      "low_carbon_consumption_yearly": {
+        "name": "Low-carbon consumption (this year)"
+      }
     }
   }
 }
